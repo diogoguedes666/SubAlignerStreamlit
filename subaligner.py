@@ -143,7 +143,7 @@ def plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_di
     st.pyplot(fig)
 
 def main():
-    st.title('Amplitude Summation Tool')
+    st.title('Sub DelayCalculator')
 
     categories = ['subs', 'lowmids']
     file_dict = {category: None for category in categories}
@@ -173,7 +173,7 @@ def main():
                 st.error(f"Error occurred while reading file: {e}")
 
     coherence_tolerance = st.slider("Coherence Tolerance", min_value=0.25, max_value=1.0, value=0.5, step=0.01)
-    amp_diff_dB = st.slider("Isolation Zone dB Range", min_value=1, max_value=40, value=16, step=1)
+    amp_diff_dB = st.slider("Isolation Zone dB Range", min_value=1, max_value=90, value=16, step=1)
 
     if df_list and len(crossover_freqs) == len(df_list) - 1:
         st.header('Alignment Information')
