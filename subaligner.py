@@ -176,7 +176,7 @@ def main():
                 st.error(f"Error occurred while reading file: {e}")
 
     coherence_tolerance = st.slider("Coherence Tolerance", min_value=0.25, max_value=1.0, value=0.5, step=0.01)
-    amp_diff_dB = st.slider("Isolation Zone dB Range (Zone with X or less dB difference between curves)", min_value=1, max_value=60, value=18, step=1)
+    amp_diff_dB = st.slider("Isolation Zone dB Range (Zone with X or less dB of difference between curves)", min_value=1, max_value=60, value=18, step=1)
 
     if df_list and len(crossover_freqs) == len(df_list) - 1:
         st.header('Alignment Information')
