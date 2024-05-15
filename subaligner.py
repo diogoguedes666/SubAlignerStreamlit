@@ -151,18 +151,15 @@ def main():
     st.title('SubSync Delay Calculator')
     st.markdown("by [monsterDSP](https://instagram.com/monsterdsp)")
 
-    categories = ['subs', 'lowmids']
+    categories = ['SUB', 'PA']
     file_dict = {category: None for category in categories}
     df_list = []
     crossover_freqs = []
 
     for idx, category in enumerate(categories):
-        
-        file_dict[category] = st.file_uploader(f"Upload {category.capitalize()} Transfer Function File", type=['csv', 'txt'])
+        file_dict[category] = st.file_uploader(f"Upload {category} Transfer Function File", type=['csv', 'txt'])
 
         if file_dict[category] is not None:
-            
-
             try:
                 df = pd.read_csv(file_dict[category], delimiter='\t')
                 df.columns = ['Frequency', 'Magnitude (dB)', 'Phase (degrees)', 'Coherence']
@@ -179,8 +176,7 @@ def main():
                 st.error(f"Error occurred while reading file: {e}")
 
     coherence_tolerance = st.slider("Coherence Tolerance", min_value=0.25, max_value=1.0, value=0.5, step=0.01)
-    amp_diff_dB = st.slider("Isolation Zone dB Range (Zone with X or less dB difference between curves)", min_value=1, max_value=90
-                        , value=16, step=1)
+    amp_diff_dB = st.slider("Isolation Zone dB Range (Zone with X or less dB difference between curves)", min_value=1, max_value=60, value=18, step=1)
 
     if df_list and len(crossover_freqs) == len(df_list) - 1:
         st.header('Alignment Information')
@@ -194,12 +190,13 @@ def main():
                 total_delay_ms += delay_ms
                 polarity_adjustments.append(polarity)
 
-        if total_delay_ms < 0:
-            displayed_delay = -total_delay_ms  # Make delay positive if calculated delay is negative
+        # Round the delay to one decimal place, with special handling for very small delays
+        if abs(total_delay_ms) < 0.1:
+            displayed_delay = 0.0  # Set very small delays to zero
         else:
-            displayed_delay = total_delay_ms
+            displayed_delay = round(abs(total_delay_ms), 1)  # Round to one decimal place
 
-        st.markdown(f"**Total Delay for Alignment**: {displayed_delay:.2f} ms")
+        st.markdown(f"**Total Delay for Alignment**: {displayed_delay:.1f} ms")
         st.markdown(f"**Polarity Adjustments**: {' '.join(polarity_adjustments)}")
 
         plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_diff_dB)
