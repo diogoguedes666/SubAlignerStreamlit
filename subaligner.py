@@ -80,6 +80,7 @@ def calculate_best_delay(df1, df2, crossover_freq_hz, amp_diff_dB):
 def plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_diff_dB):
     fig, (ax_mag, ax_phase) = plt.subplots(2, 1, figsize=(10, 12))
 
+    sum_complex_before = np.zeros(len(df_list[0]), dtype=np.complex128)
     sum_complex_after = np.zeros(len(df_list[0]), dtype=np.complex128)
     frequency = df_list[0]['Frequency'].values
 
@@ -92,6 +93,8 @@ def plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_di
         amplitude_linear_filtered = 10 ** (df_filtered['Magnitude (dB)'] / 20)
         phase_radians_filtered = unwrap_phase(df_filtered['Phase (degrees)'])
         complex_response_filtered = amplitude_linear_filtered * np.exp(1j * phase_radians_filtered)
+
+        sum_complex_before += np.interp(frequency, df_filtered['Frequency'], complex_response_filtered, left=0, right=0)
 
         if idx > 0:
             delay_ms, polarity = calculate_best_delay(df_list[0], df, crossover_freqs[idx-1], amp_diff_dB)
@@ -107,9 +110,11 @@ def plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_di
         ax_mag.plot(df_filtered['Frequency'], 20 * np.log10(amplitude_linear_filtered), label=f'Trace {idx + 1}')
         ax_phase.plot(df_filtered['Frequency'], df_filtered['Phase (degrees)'], label=f'Trace {idx + 1}')
 
+    sum_amplitude_before = 20 * np.log10(np.abs(sum_complex_before))
     sum_amplitude_after = 20 * np.log10(np.abs(sum_complex_after))
     sum_phase_after = np.degrees(np.angle(sum_complex_after))
 
+    ax_mag.plot(frequency, sum_amplitude_before, 'gray', linestyle='--', label='Sum Before Alignment')
     ax_mag.plot(frequency, sum_amplitude_after, 'r--', label='Sum After Alignment')
     ax_phase.plot(frequency, sum_phase_after, 'r--', label='Sum After Alignment')
 
