@@ -148,7 +148,8 @@ def plot_transfer_function(df_list, crossover_freqs, coherence_tolerance, amp_di
     st.pyplot(fig)
 
 def main():
-    st.title('Sub DelayCalculator')
+    st.title('SubSync Delay Calculator')
+    st.markdown("by [monsterDSP](https://instagram.com/monsterdsp)")
 
     categories = ['subs', 'lowmids']
     file_dict = {category: None for category in categories}
