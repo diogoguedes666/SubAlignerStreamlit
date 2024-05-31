@@ -1,3 +1,4 @@
-SubSync by monsterDSP
+SubSync
+Subwoofer Delay Calculator by monsterDSP
 
-Suggests delay and polarity for a perfect subwoofer alignment
+Easily find best delay and polarity settings for a perfect crossover response
