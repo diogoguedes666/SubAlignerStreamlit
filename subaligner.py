@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 import io
 import os
 
+# Define the URL for the speaker icon image
+speaker_icon_url = ":speaker:"
+
+# Set the page configuration with the favicon parameter
+st.set_page_config(page_title="SubSync", page_icon=speaker_icon_url)
+
 st.markdown(
     f"""
     <style>
