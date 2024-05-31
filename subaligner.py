@@ -5,6 +5,25 @@ import matplotlib.pyplot as plt
 import io
 import os
 
+# Custom CSS for background image
+st.markdown(
+    f"""
+    <style>
+    .reportview-container {{
+        background: url('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=') center center no-repeat;
+        background-size: cover;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+image_url = "https://i.postimg.cc/9FTzQjqf/monsterlogo.png"
+st.markdown(
+    f'<img src="{image_url}" style="display: block; margin-left: auto; margin-right: auto; width: 25%;" />',
+    unsafe_allow_html=True
+)
+
 def preprocess_transfer_function(df):
     df['Frequency'] = pd.to_numeric(df['Frequency'], errors='coerce')
     df['Magnitude (dB)'] = pd.to_numeric(df['Magnitude (dB)'], errors='coerce')
@@ -179,7 +198,7 @@ def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, d
 
 def main():
     st.title('SubSync Delay Calculator')
-    st.markdown("by [monsterDSP](https://instagram.com/monsterdsp)")
+    st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
 
     categories = ['SUB', 'PA']
     file_dict = {category: None for category in categories}
@@ -199,7 +218,7 @@ def main():
                     df_list.append(df)
                     if idx > 0:
                         crossover_text = f"Enter Acoustic Crossover Frequency between {categories[idx-1].capitalize()} and {category.capitalize()} (Hz)"
-                        crossover_freq = st.slider(crossover_text, min_value=20, max_value=500, value=160, step=1)
+                        crossover_freq = st.slider(crossover_text, min_value=20, max_value=500, value=120, step=1)
                         crossover_freqs.append(crossover_freq)
 
             except Exception as e:
