@@ -28,6 +28,7 @@ st.markdown(
 )
 
 
+
 def preprocess_transfer_function(df):
     df['Frequency'] = pd.to_numeric(df['Frequency'], errors='coerce')
     df['Magnitude (dB)'] = pd.to_numeric(df['Magnitude (dB)'], errors='coerce')
@@ -222,7 +223,43 @@ def main():
     st.markdown("<h3>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
 
 
+
     st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
+    
+
+    # Define a boolean variable to track the visibility of the help dialog
+    show_help = st.button("HELP", key="help_button", help="Show information")
+
+    # Display help dialog if the HELP button is clicked
+    if show_help:
+        st.markdown("""
+            <div class="help-dialog">
+                <h2>How to use SubSync by monsterDSP:</h2>
+                <ol>
+                    <li>Measure subwoofer and PA in Smaart, and save two different files</li>
+                    <li>Save measurements as ASCII files</li>
+                    <li>Load subwoofer trace and PA trace in SubSync</li>
+                    <li>Adjust crossover, coherence threshold and dB isolation zone as needed to reach best sum in crossover region</li>
+                    <li>Get delay and polarity results</li>
+                    <li>Download sum curve and load it in Smaart for reference</li>
+                    <li>Apply calculated delay and polarity to subwoofer or PA (in case it’s negative)</li>
+                    <li>Check if results match SubSync’s predictions</li>
+                </ol>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Custom CSS to style the button to make it smaller
+        st.markdown("""
+            <style>
+                .help-button {
+                    width: 40px;
+                    height: 10px;
+                    background-color: #f0f0f0;
+                    border: none;
+                    padding: 5px;
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
     categories = ['SUB', 'PA']
     file_dict = {category: None for category in categories}
@@ -230,7 +267,7 @@ def main():
     crossover_freqs = []
 
     for idx, category in enumerate(categories):
-        file_dict[category] = st.file_uploader(f"Upload {category} Transfer Function File", type=['csv', 'txt'])
+        file_dict[category] = st.file_uploader(f"Upload {category} Transfer Function ASCII File", type=['csv', 'txt'])
 
         if file_dict[category] is not None:
             try:
