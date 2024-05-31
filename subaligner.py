@@ -5,13 +5,16 @@ import matplotlib.pyplot as plt
 import io
 import os
 
-# Custom CSS for background image
 st.markdown(
     f"""
     <style>
     .reportview-container {{
         background: url('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=') center center no-repeat;
         background-size: cover;
+    }}
+    .center {{
+        display: flex;
+        justify-content: center;
     }}
     </style>
     """,
@@ -20,9 +23,10 @@ st.markdown(
 
 image_url = "https://i.postimg.cc/9FTzQjqf/monsterlogo.png"
 st.markdown(
-    f'<img src="{image_url}" style="display: block; margin-left: auto; margin-right: auto; width: 25%;" />',
+    f'<div class="center"><img src="{image_url}" style="width: 25%; margin-left: -20px;" /></div>',
     unsafe_allow_html=True
 )
+
 
 def preprocess_transfer_function(df):
     df['Frequency'] = pd.to_numeric(df['Frequency'], errors='coerce')
@@ -197,7 +201,9 @@ def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, d
     return output.getvalue()
 
 def main():
-    st.title('SubSync Delay Calculator')
+    st.markdown("<h1 style='text-align: center; color: #f63366;'>SubSync</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #f63366;'>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
+
     st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
 
     categories = ['SUB', 'PA']
@@ -276,6 +282,7 @@ def main():
                 file_name=output_filename,
                 mime='text/plain'
             )
+
 
 if __name__ == "__main__":
     main()
