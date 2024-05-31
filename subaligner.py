@@ -201,8 +201,26 @@ def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, d
     return output.getvalue()
 
 def main():
-    st.markdown("<h1 style='text-align: center; color: #f63366;'>SubSync</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; color: #f63366;'>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <style>
+        .reportview-container {{
+            background: url('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=') center center no-repeat;
+            background-size: cover;
+        }}
+        h1, h3 {{
+            text-align: center;
+            color: #f63366;
+            line-height: 0.5; /* Adjust the line height as needed */
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("<h1>SubSync</h1>", unsafe_allow_html=True)
+    st.markdown("<h3>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
+
 
     st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
 
