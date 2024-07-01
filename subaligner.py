@@ -244,11 +244,9 @@ def main():
                     <li>Measure subwoofer and PA in Smaart, and save two different files</li>
                     <li>Save measurements as ASCII files</li>
                     <li>Load subwoofer trace and PA trace in SubSync</li>
-                    <li>Adjust crossover, coherence threshold and dB isolation zone as needed to reach best sum in crossover region</li>
+                    <li>Adjust crossover, coherence threshold and dB isolation zone as needed to reach desired sum in crossover region</li>
                     <li>Get delay and polarity results</li>
-                    <li>Download sum curve and load it in Smaart for reference</li>
                     <li>Apply calculated delay and polarity to subwoofer or PA (in case it’s negative)</li>
-                    <li>Check if results match SubSync’s predictions</li>
                 </ol>
             </div>
         """, unsafe_allow_html=True)
