@@ -47,7 +47,6 @@ def unwrap_phase(phase):
     return np.unwrap(np.radians(phase))
 
 def find_initial_crossover(df1, df2, freq_range=(20, 20000)):
-    # Ensure that both dataframes cover the same frequency range
     common_frequencies = np.intersect1d(df1['Frequency'].values, df2['Frequency'].values)
     df1_common = df1[df1['Frequency'].isin(common_frequencies)]
     df2_common = df2[df2['Frequency'].isin(common_frequencies)]
@@ -57,24 +56,11 @@ def find_initial_crossover(df1, df2, freq_range=(20, 20000)):
 
     df1_common = df1_common.set_index('Frequency')
     df2_common = df2_common.set_index('Frequency')
+    df1_common = df1_common.loc[(df1_common.index >= freq_range[0]) & (df1_common.index <= freq_range[1])]
+    df2_common = df2_common.loc[(df2_common.index >= freq_range[0]) & (df2_common.index <= freq_range[1])]
 
-    # Filter frequencies within the specified realistic range
-    df1_common = df1_common[df1_common.index >= freq_range[0]]
-    df1_common = df1_common[df1_common.index <= freq_range[1]]
-    df2_common = df2_common[df2_common.index >= freq_range[0]]
-    df2_common = df2_common[df2_common.index <= freq_range[1]]
-
-    # Calculate the absolute difference in gain
-    gain_diff = np.abs(df1_common['Magnitude (dB)'] - df2_common['Magnitude (dB)'])
-
-    # Apply a smoothing filter (e.g., moving average)
-    gain_diff_smoothed = gain_diff.rolling(window=5, min_periods=1).mean()
-
-    # Find the frequency with the smallest difference in gain
-    min_gain_diff_freq = gain_diff_smoothed.idxmin()
-
-    return min_gain_diff_freq
-
+    gain_diff = np.abs(df1_common['Magnitude (dB)'] - df2_common['Magnitude (dB)']).rolling(window=5, min_periods=1).mean()
+    return gain_diff.idxmin()
 
 def format_hovertext(frequency, amplitude, trace_name):
     if frequency >= 1000:
@@ -82,8 +68,6 @@ def format_hovertext(frequency, amplitude, trace_name):
     else:
         freq_label = f"{frequency:.1f} Hz"
     return f"{trace_name}<br>Frequency: {freq_label}<br>Amplitude: {amplitude:.1f} dB"
-
-
 
 def calculate_best_delay(df1, df2, crossover_freq_hz, amp_diff_dB):
     amp_diff_linear = 10 ** (amp_diff_dB / 20)
@@ -98,7 +82,6 @@ def calculate_best_delay(df1, df2, crossover_freq_hz, amp_diff_dB):
     while upper_freq <= df1['Frequency'].max() and abs(crossover_amp1 - np.interp(upper_freq, df1['Frequency'], df1['Magnitude (dB)'])) <= amp_diff_dB:
         upper_freq += 1
 
-    # Ensure that both dataframes cover the same frequency range
     common_frequencies = np.intersect1d(df1['Frequency'].values, df2['Frequency'].values)
     df1_range = df1[df1['Frequency'].isin(common_frequencies)]
     df2_range = df2[df2['Frequency'].isin(common_frequencies)]
@@ -106,11 +89,9 @@ def calculate_best_delay(df1, df2, crossover_freq_hz, amp_diff_dB):
     if df1_range.empty or df2_range.empty:
         return None, None
 
-    # Unwrap phases and ensure arrays are directly comparable by aligning them on the same frequency values
     phase1_unwrapped = unwrap_phase(np.interp(common_frequencies, df1_range['Frequency'], df1_range['Phase (degrees)']))
     phase2_unwrapped = unwrap_phase(np.interp(common_frequencies, df2_range['Frequency'], df2_range['Phase (degrees)']))
 
-    # Phase adjustment calculations as before
     crossover_phase_diff = phase1_unwrapped - phase2_unwrapped
     initial_phase_diff = (crossover_phase_diff + np.pi) % (2 * np.pi) - np.pi
 
@@ -142,38 +123,32 @@ def plot_transfer_function(df_list, coherence_tolerance, amp_diff_dB, crossover_
     sum_complex_before = np.zeros(len(frequency), dtype=np.complex128)
     sum_complex_after = np.zeros(len(frequency), dtype=np.complex128)
 
-    # Plot each trace and calculate the before alignment sum
     for idx, df in enumerate(df_list):
         df_filtered = df[df['Coherence'] >= coherence_tolerance]
         amplitude_linear = 10 ** (df_filtered['Magnitude (dB)'] / 20)
         phase_radians = unwrap_phase(df_filtered['Phase (degrees)'])
         complex_response = amplitude_linear * np.exp(1j * phase_radians)
         
-        # Sum before alignment
         sum_complex_before += np.interp(frequency, df_filtered['Frequency'], complex_response, left=0, right=0)
         
         trace_name = f'Trace {idx + 1}'
         hovertext = [format_hovertext(f, a, trace_name) for f, a in zip(df_filtered['Frequency'], 20 * np.log10(amplitude_linear))]
         fig.add_trace(go.Scatter(x=df_filtered['Frequency'], y=20 * np.log10(amplitude_linear), mode='lines', name=trace_name, text=hovertext, hoverinfo='text'), row=1, col=1)
 
-        # Add red dots at the crossover frequencies
         for crossover_freq in crossover_freqs:
             crossover_amp = np.interp(crossover_freq, df_filtered['Frequency'], 20 * np.log10(amplitude_linear))
             fig.add_trace(go.Scatter(x=[crossover_freq], y=[crossover_amp], mode='markers', marker=dict(color='red', size=10), showlegend=False, hoverinfo='skip'))
 
     sum_amplitude_before = 20 * np.log10(np.abs(sum_complex_before))
-    
-    # Plot the sum before alignment
     hovertext = [format_hovertext(f, a, 'Sum Before Alignment') for f, a in zip(frequency, sum_amplitude_before)]
     fig.add_trace(go.Scatter(x=frequency, y=sum_amplitude_before, mode='lines', name='Sum Before Alignment', line=dict(color='gray', dash='dash'), text=hovertext, hoverinfo='text'), row=1, col=1)
 
-    # Calculate and plot the after alignment sum
     for idx, df in enumerate(df_list):
         df_filtered = df[df['Coherence'] >= coherence_tolerance]
         amplitude_linear = 10 ** (df_filtered['Magnitude (dB)'] / 20)
         phase_radians = unwrap_phase(df_filtered['Phase (degrees)'])
         complex_response = amplitude_linear * np.exp(1j * phase_radians)
-        
+
         if idx > 0:
             delay_ms, polarity = calculate_best_delay(df_list[0], df, crossover_freqs[idx-1], amp_diff_dB)
             if polarity == 'invert':
@@ -187,17 +162,14 @@ def plot_transfer_function(df_list, coherence_tolerance, amp_diff_dB, crossover_
         sum_complex_after += np.interp(frequency, df_filtered['Frequency'], complex_response, left=0, right=0)
 
     sum_amplitude_after = 20 * np.log10(np.abs(sum_complex_after))
-
     hovertext = [format_hovertext(f, a, 'Sum After Alignment') for f, a in zip(frequency, sum_amplitude_after)]
     fig.add_trace(go.Scatter(x=frequency, y=sum_amplitude_after, mode='lines', name='Sum After Alignment', line=dict(color='red', dash='dash'), text=hovertext, hoverinfo='text'), row=1, col=1)
 
-    # Add legend entry for crossover frequency (red dot)
     fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color='red', size=10), name='Crossover Frequency'))
 
     fig.update_layout(xaxis_type="log", xaxis=dict(title='Frequency (Hz)'), yaxis=dict(title='Magnitude (dB)'), title='Magnitude Response')
     fig.update_xaxes(range=[np.log10(20), np.log10(20000)])
 
-    # Apply the stored axis range if provided
     if x_range:
         fig.update_xaxes(range=x_range)
     if y_range:
@@ -205,15 +177,12 @@ def plot_transfer_function(df_list, coherence_tolerance, amp_diff_dB, crossover_
 
     return fig
 
-
-
 def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, df_list, coherence_tolerance, inputfilename1, inputfilename2):
     output = io.StringIO()
     trace_name = inputfilename1 + '+' + inputfilename2
     output.write('\t' + trace_name + '\n')
     output.write('\t'.join(['Frequency (Hz)', 'Magnitude (dB)', 'Phase (degrees)', 'Coherence']) + '\n')
 
-    # Calculate the average coherence for each frequency
     coherences = np.zeros_like(frequency)
     coherence_counts = np.zeros_like(frequency)
 
@@ -225,24 +194,18 @@ def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, d
 
     average_coherences = np.divide(coherences, coherence_counts, out=np.zeros_like(coherences), where=coherence_counts != 0)
 
-    # Determine the number of decimal places in the frequency values
     decimal_places = len(str(frequency[0]).split('.')[-1])
 
     for i, (f, mag, phase, coherence) in enumerate(zip(frequency, sum_amplitude_after, sum_phase_after, average_coherences)):
-        # Handle -inf values in magnitude column
         if np.isinf(mag):
-            # Find the indices of neighboring frequencies
             left_idx = max(i - 1, 0)
             right_idx = min(i + 1, len(frequency) - 1)
-            # Check if both neighboring values are -inf
             if np.isinf(sum_amplitude_after[left_idx]) and np.isinf(sum_amplitude_after[right_idx]):
-                mag = -120  # Replace -inf with a default value (e.g., -120 dB)
+                mag = -120
             else:
-                # Calculate the average magnitude of neighboring frequencies
                 valid_neighbors = [val for val in [sum_amplitude_after[left_idx], sum_amplitude_after[right_idx]] if not np.isinf(val)]
                 avg_mag = np.mean(valid_neighbors)
                 mag = avg_mag
-        # Format frequency with the same number of decimal places as the input files
         f_formatted = "{:.{}f}".format(f, decimal_places)
         output.write(f'{f_formatted}\t{mag:.2f}\t{phase:.2f}\t{coherence:.2f}\n')
 
@@ -270,11 +233,9 @@ def main():
     st.markdown("<h3>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
 
     st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
-    
-    # Define a boolean variable to track the visibility of the help dialog
+
     show_help = st.button("HELP", key="help_button", help="Show information")
 
-    # Display help dialog if the HELP button is clicked
     if show_help:
         st.markdown("""
             <div class="help-dialog">
@@ -292,19 +253,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # Custom CSS to style the button to make it smaller
-        st.markdown("""
-            <style>
-                .help-button {
-                    width: 40px;
-                    height: 10px;
-                    background-color: #f0f0f0;
-                    border: none;
-                    padding: 5px;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-
     categories = ['SUB', 'PA']
     file_dict = {category: None for category in categories}
     df_list = []
@@ -316,7 +264,7 @@ def main():
             try:
                 df = pd.read_csv(file_dict[category], delimiter='\t')
                 df.columns = ['Frequency', 'Magnitude (dB)', 'Phase (degrees)', 'Coherence']
-                df = preprocess_transfer_function(df)  # Ensure preprocessing is applied
+                df = preprocess_transfer_function(df)
 
                 if not df.empty:
                     df_list.append(df)
@@ -325,20 +273,46 @@ def main():
                 st.error(f"Error occurred while reading file: {e}")
 
     if len(df_list) == 2:
-
-
-        # Calculate the initial crossover frequency
         initial_crossover_freq = find_initial_crossover(df_list[0], df_list[1])
         if initial_crossover_freq is None:
             st.error("Could not determine initial crossover frequency.")
             return
 
-        # Use this frequency to set the initial crossover frequency in the slider
-        st.markdown(f"**Detected Crossover Frequency**: {initial_crossover_freq:.1f} Hz")
-        crossover_freq = st.slider("Set Crossover Frequency (Hz)", min_value=20, max_value=500, value=int(initial_crossover_freq), step=1)
+        if "crossover_freq" not in st.session_state:
+            st.session_state.crossover_freq = initial_crossover_freq
+        if "coherence_tolerance" not in st.session_state:
+            st.session_state.coherence_tolerance = 0.65
+        if "amp_diff_dB" not in st.session_state:
+            st.session_state.amp_diff_dB = 24
+            
 
-        coherence_tolerance = st.slider("Coherence Tolerance", min_value=0.25, max_value=1.0, value=0.5, step=0.01)
-        amp_diff_dB = st.slider("Isolation Zone Range (dB difference between curves)", min_value=1, max_value=60, value=18, step=1)
+        crossover_freq = st.session_state.crossover_freq
+        coherence_tolerance = st.session_state.coherence_tolerance
+        amp_diff_dB = st.session_state.amp_diff_dB
+
+        st.markdown(f"**Detected Crossover Frequency**: {initial_crossover_freq:.1f} Hz")
+
+        # Implement nudge buttons for the crossover frequency
+        col1, col2, col3 = st.columns([1, 3, 1])
+        
+        with col1:
+            if st.button("-1 Hz"):
+                st.session_state.crossover_freq = max(20, st.session_state.crossover_freq - 1)
+        with col3:
+            if st.button("+1 Hz"):
+                st.session_state.crossover_freq = min(500, st.session_state.crossover_freq + 1)
+        with col2:
+            crossover_freq = st.slider("Set Crossover Frequency (Hz)", min_value=20, max_value=500, value=int(st.session_state.crossover_freq), step=1)
+            st.session_state.crossover_freq = crossover_freq
+
+
+        # Coherence tolerance slider
+        coherence_tolerance = st.slider("Coherence Tolerance", min_value=0.25, max_value=1.0, value=st.session_state.coherence_tolerance, step=0.01)
+        st.session_state.coherence_tolerance = coherence_tolerance
+
+        # Isolation zone range slider
+        amp_diff_dB = st.slider("Isolation Zone Range (dB difference between curves)", min_value=1, max_value=60, value=int(st.session_state.amp_diff_dB), step=1)
+        st.session_state.amp_diff_dB = amp_diff_dB
 
         crossover_freqs = [crossover_freq]
 
