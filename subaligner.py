@@ -46,7 +46,7 @@ def preprocess_transfer_function(df):
 def unwrap_phase(phase):
     return np.unwrap(np.radians(phase))
 
-def find_initial_crossover(df1, df2):
+def find_initial_crossover(df1, df2, freq_range=(20, 20000)):
     # Ensure that both dataframes cover the same frequency range
     common_frequencies = np.intersect1d(df1['Frequency'].values, df2['Frequency'].values)
     df1_common = df1[df1['Frequency'].isin(common_frequencies)]
@@ -58,11 +58,20 @@ def find_initial_crossover(df1, df2):
     df1_common = df1_common.set_index('Frequency')
     df2_common = df2_common.set_index('Frequency')
 
+    # Filter frequencies within the specified realistic range
+    df1_common = df1_common[df1_common.index >= freq_range[0]]
+    df1_common = df1_common[df1_common.index <= freq_range[1]]
+    df2_common = df2_common[df2_common.index >= freq_range[0]]
+    df2_common = df2_common[df2_common.index <= freq_range[1]]
+
     # Calculate the absolute difference in gain
     gain_diff = np.abs(df1_common['Magnitude (dB)'] - df2_common['Magnitude (dB)'])
 
+    # Apply a smoothing filter (e.g., moving average)
+    gain_diff_smoothed = gain_diff.rolling(window=5, min_periods=1).mean()
+
     # Find the frequency with the smallest difference in gain
-    min_gain_diff_freq = gain_diff.idxmin()
+    min_gain_diff_freq = gain_diff_smoothed.idxmin()
 
     return min_gain_diff_freq
 
