@@ -7,7 +7,7 @@ import io
 import os
 
 # Set the page configuration with the favicon parameter
-st.set_page_config(page_title="SubSync", page_icon=:speaker:)
+st.set_page_config(page_title="SubSync", page_icon=":speaker:")
 
 st.markdown(
     f"""
