@@ -9,19 +9,18 @@ import os
 # Set the page configuration with the favicon parameter
 st.set_page_config(page_title="SubSync", page_icon=":speaker:")
 
+# Apply custom light mode CSS
 st.markdown(
     f"""
     <style>
-    body {{
+    body, .reportview-container, .sidebar .sidebar-content {{
         background-color: #ffffff !important;
         color: #000000 !important;
     }}
-    .reportview-container {{
+    .css-1d391kg {{" 
         background-color: #ffffff !important;
-        color: #000000 !important;
     }}
-    .sidebar .sidebar-content {{
-        background-color: #ffffff !important;
+    .css-1d391kg h1, .css-1d391kg h3 {{
         color: #000000 !important;
     }}
     .center {{
