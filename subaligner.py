@@ -12,35 +12,20 @@ speaker_icon_url = ":speaker:"
 # Set the page configuration with the favicon parameter
 st.set_page_config(page_title="SubSync", page_icon=speaker_icon_url)
 
-# Inject custom CSS to force light mode
-st.markdown(
-    """
-    <style>
-    :root {
-        color-scheme: light;
-        --background-color: #ffffff;
-        --text-color: #000000;
-        --primary-color: #ff4b4b;
-    }
-    body {
-        background-color: var(--background-color);
-        color: var(--text-color);
-    }
-    .stButton button {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.markdown(
     f"""
     <style>
+    body {{
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }}
     .reportview-container {{
-        background: url('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=') center center no-repeat;
-        background-size: cover;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }}
+    .sidebar .sidebar-content {{
+        background-color: #ffffff !important;
+        color: #000000 !important;
     }}
     .center {{
         display: flex;
