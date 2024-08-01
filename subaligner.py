@@ -11,22 +11,34 @@ st.set_page_config(page_title="SubSync", page_icon=":speaker:")
 
 # Apply custom light mode CSS
 st.markdown(
-    f"""
+    """
     <style>
-    body, .reportview-container, .sidebar .sidebar-content {{
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }}
-    .css-1d391kg {{" 
-        background-color: #ffffff !important;
-    }}
-    .css-1d391kg h1, .css-1d391kg h3 {{
-        color: #000000 !important;
-    }}
-    .center {{
+    :root {
+        color-scheme: light;
+        --background-color: #ffffff;
+        --text-color: #000000;
+        --primary-color: #ff4b4b;
+    }
+    body {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    .stButton button {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+    .reportview-container, .sidebar .sidebar-content {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    .css-1d391kg, .css-1d391kg h1, .css-1d391kg h3, .css-1d391kg .css-1cpxqw2, .css-1d391kg .css-1cpxqw2 h1, .css-1d391kg .css-1cpxqw2 h3 {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    .center {
         display: flex;
         justify-content: center;
-    }}
+    }
     </style>
     """,
     unsafe_allow_html=True
