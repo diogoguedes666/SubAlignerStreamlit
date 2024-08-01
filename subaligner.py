@@ -14,26 +14,17 @@ st.markdown(
     """
     <style>
     :root {
-        color-scheme: light;
-        --background-color: #ffffff;
-        --text-color: #000000;
-        --primary-color: #ff4b4b;
+        --background-color: #ffffff !important;
+        --text-color: #000000 !important;
+        --primary-color: #ff4b4b !important;
     }
-    body {
+    html, body, .stApp, .reportview-container, .main, .sidebar-content, .block-container, .css-18e3th9, .css-1r6slb0, .css-1cpxqw2, .css-1d391kg, .css-1d391kg h1, .css-1d391kg h3, .css-1cpxqw2, .css-1cpxqw2 h1, .css-1cpxqw2 h3 {
         background-color: var(--background-color) !important;
         color: var(--text-color) !important;
     }
     .stButton button {
         background-color: var(--primary-color) !important;
         color: white !important;
-    }
-    .reportview-container, .sidebar .sidebar-content {
-        background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
-    }
-    .css-1d391kg, .css-1d391kg h1, .css-1d391kg h3, .css-1d391kg .css-1cpxqw2, .css-1d391kg .css-1cpxqw2 h1, .css-1d391kg .css-1cpxqw2 h3 {
-        background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
     }
     .center {
         display: flex;
