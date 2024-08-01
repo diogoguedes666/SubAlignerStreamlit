@@ -16,15 +16,33 @@ st.markdown(
     :root {
         --background-color: #ffffff !important;
         --text-color: #000000 !important;
-        --primary-color: #ff4b4b !important;
+        --primary-color: #f63366 !important; /* same color as the title */
+        --selection-background-color: #1C3D73 !important; /* blue background color for selection */
+        --selection-text-color: white !important; /* white text color for selection */
     }
-    html, body, .stApp, .reportview-container, .main, .sidebar-content, .block-container, .css-18e3th9, .css-1r6slb0, .css-1cpxqw2, .css-1d391kg, .css-1d391kg h1, .css-1d391kg h3, .css-1cpxqw2, .css-1cpxqw2 h1, .css-1cpxqw2 h3 {
+    html, body, .stApp, .reportview-container, .main, .block-container, .css-18e3th9, .css-1r6slb0, .css-1cpxqw2, .css-1d391kg, .css-1d391kg h1, .css-1d391kg h3, .css-1cpxqw2, .css-1cpxqw2 h1, .css-1cpxqw2 h3, .stFileUpload {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    .stApp header, .stApp [data-testid="stSidebar"], .stApp [data-testid="stToolbar"] {
         background-color: var(--background-color) !important;
         color: var(--text-color) !important;
     }
     .stButton button {
         background-color: var(--primary-color) !important;
         color: white !important;
+    }
+    .stFileUploadDropzone {
+        background-color: var(--background-color) !important;
+    }
+    .stFileUploadLabel, .stFileUploadLabel span {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    .selection-style {
+        background-color: var(--selection-background-color) !important;
+        color: var(--selection-text-color) !important;
+        padding: 2px 4px; /* add some padding for better visual */
     }
     .center {
         display: flex;
@@ -41,6 +59,14 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.logo("https://i.postimg.cc/9FTzQjqf/monsterlogo.png")
+
+def calculate_average_amplitude(sum_amplitude_before, sum_amplitude_after):
+    # Calculate the average amplitude from both traces
+    avg_amplitude_before = np.mean(sum_amplitude_before)
+    avg_amplitude_after = np.mean(sum_amplitude_after)
+    return (avg_amplitude_before + avg_amplitude_after) / 2
+
 # Preprocess function to handle invalid values
 def preprocess_transfer_function(df):
     df['Frequency'] = pd.to_numeric(df['Frequency'], errors='coerce')
@@ -52,6 +78,8 @@ def preprocess_transfer_function(df):
 
 def unwrap_phase(phase):
     return np.unwrap(np.radians(phase))
+
+
 
 def find_initial_crossover(df1, df2, freq_range=(20, 20000)):
     common_frequencies = np.intersect1d(df1['Frequency'].values, df2['Frequency'].values)
@@ -125,19 +153,29 @@ def calculate_best_delay(df1, df2, crossover_freq_hz, amp_diff_dB):
 
 def plot_transfer_function(df_list, coherence_tolerance, amp_diff_dB, crossover_freqs, x_range=None, y_range=None):
     fig = make_subplots(rows=1, cols=1)
-
+    
     frequency = df_list[0]['Frequency'].values
     sum_complex_before = np.zeros(len(frequency), dtype=np.complex128)
     sum_complex_after = np.zeros(len(frequency), dtype=np.complex128)
+
+    # Calculate the amplitudes of the input files
+    amplitudes_before = []
+    amplitudes_after = []
 
     for idx, df in enumerate(df_list):
         df_filtered = df[df['Coherence'] >= coherence_tolerance]
         amplitude_linear = 10 ** (df_filtered['Magnitude (dB)'] / 20)
         phase_radians = unwrap_phase(df_filtered['Phase (degrees)'])
         complex_response = amplitude_linear * np.exp(1j * phase_radians)
-        
+
+        # Compute average amplitude from the input files
+        if idx == 0:
+            amplitudes_before.extend(amplitude_linear)
+        else:
+            amplitudes_after.extend(amplitude_linear)
+
         sum_complex_before += np.interp(frequency, df_filtered['Frequency'], complex_response, left=0, right=0)
-        
+
         trace_name = f'Trace {idx + 1}'
         hovertext = [format_hovertext(f, a, trace_name) for f, a in zip(df_filtered['Frequency'], 20 * np.log10(amplitude_linear))]
         fig.add_trace(go.Scatter(x=df_filtered['Frequency'], y=20 * np.log10(amplitude_linear), mode='lines', name=trace_name, text=hovertext, hoverinfo='text'), row=1, col=1)
@@ -172,17 +210,52 @@ def plot_transfer_function(df_list, coherence_tolerance, amp_diff_dB, crossover_
     hovertext = [format_hovertext(f, a, 'Sum After Alignment') for f, a in zip(frequency, sum_amplitude_after)]
     fig.add_trace(go.Scatter(x=frequency, y=sum_amplitude_after, mode='lines', name='Sum After Alignment', line=dict(color='red', dash='dash'), text=hovertext, hoverinfo='text'), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color='red', size=10), name='Crossover Frequency'))
+    # Calculate average amplitude from the input files
+    avg_amplitude_before = np.mean(20 * np.log10(np.abs(np.array(amplitudes_before))))
+    avg_amplitude_after = np.mean(20 * np.log10(np.abs(np.array(amplitudes_after))))
+    avg_amplitude = (avg_amplitude_before + avg_amplitude_after) / 2
+
+    # Define vertical range for the plot
+    y_min = -20
+    y_max = 20
+
+    # Add shaded region for the isolation zone
+    isolation_zone_start = crossover_freq - amp_diff_dB
+    isolation_zone_end = crossover_freq + amp_diff_dB
+    fig.add_shape(
+        go.layout.Shape(
+            type='rect',
+            x0=isolation_zone_start,
+            x1=isolation_zone_end,
+            y0=-30,  
+            y1=30,  
+            fillcolor='rgba(0, 100, 255, 0.2)',
+            line=dict(color='rgba(0, 100, 255, 0.5)', width=2),
+            name='Isolation Zone'
+        )
+    )
+
+    # Add a dummy trace for the legend entry
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None],
+        mode='markers',
+        marker=dict(size=10, color='rgba(0, 100, 255, 0.2)'),
+        showlegend=True,
+        name='Isolation Zone',
+        legendgroup='Isolation Zone'
+    ))
 
     fig.update_layout(xaxis_type="log", xaxis=dict(title='Frequency (Hz)'), yaxis=dict(title='Magnitude (dB)'), title='Magnitude Response')
     fig.update_xaxes(range=[np.log10(20), np.log10(20000)])
-
     if x_range:
         fig.update_xaxes(range=x_range)
-    if y_range:
-        fig.update_yaxes(range=y_range)
+    fig.update_yaxes(range=[y_min, y_max])
 
     return fig
+
+
+
+
 
 def generate_aligned_sum_file(frequency, sum_amplitude_after, sum_phase_after, df_list, coherence_tolerance, inputfilename1, inputfilename2):
     output = io.StringIO()
@@ -226,10 +299,10 @@ def main():
             background: url('data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=') center center no-repeat;
             background-size: cover;
         }}
-        h1, h3 {{
+        h1, h4 {{
             text-align: center;
             color: #f63366;
-            line-height: 0.5; /* Adjust the line height as needed */
+            line-height: 0.4; /* Adjust the line height as needed */
         }}
         </style>
         """,
@@ -237,7 +310,7 @@ def main():
     )
 
     st.markdown("<h1>SubSync</h1>", unsafe_allow_html=True)
-    st.markdown("<h3>Subwoofer Delay Calculator</h3>", unsafe_allow_html=True)
+    st.markdown("<h4>Subwoofer Delay Calculator</h4>", unsafe_allow_html=True)
 
     st.markdown("Follow [monsterDSP](https://instagram.com/monsterdsp)")
 
@@ -246,17 +319,19 @@ def main():
     if show_help:
         st.markdown("""
             <div class="help-dialog">
-                <h2>How to use SubSync by monsterDSP:</h2>
+                <h2 class="selection-style">How to use <span style="color: var(--primary-color);">SubSync</span> by monsterDSP:</h2>
                 <ol>
                     <li>Measure subwoofer and PA in Smaart, and save two different files</li>
                     <li>Save measurements as ASCII files</li>
-                    <li>Load subwoofer trace and PA trace in SubSync</li>
+                    <li>Load subwoofer trace and PA trace in <span style="color: var(--primary-color);">SubSync</span></li>
                     <li>Adjust crossover, coherence threshold and dB isolation zone as needed to reach desired sum in crossover region</li>
                     <li>Get delay and polarity results</li>
                     <li>Apply calculated delay and polarity to subwoofer or PA (in case it’s negative)</li>
                 </ol>
             </div>
         """, unsafe_allow_html=True)
+
+
 
     categories = ['SUB', 'PA']
     file_dict = {category: None for category in categories}
@@ -316,7 +391,7 @@ def main():
         st.session_state.coherence_tolerance = coherence_tolerance
 
         # Isolation zone range slider
-        amp_diff_dB = st.slider("Isolation Zone Range (dB difference between curves)", min_value=1, max_value=60, value=int(st.session_state.amp_diff_dB), step=1)
+        amp_diff_dB = st.slider("Isolation Zone Range (dB difference between curves)", min_value=1, max_value=30, value=int(st.session_state.amp_diff_dB), step=1)
         st.session_state.amp_diff_dB = amp_diff_dB
 
         crossover_freqs = [crossover_freq]
